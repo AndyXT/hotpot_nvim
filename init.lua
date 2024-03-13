@@ -47,4 +47,4 @@ inoremap <expr> <c-x><c-f> fzf#vim#complete#path('rg --files')
 -- require("lazy").setup(plugins)
 
 -- include the rest of your config
-require("kickstart.init")
+require("config.init")
