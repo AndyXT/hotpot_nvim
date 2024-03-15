@@ -68,7 +68,6 @@
                                                                                          :name "[W]orkspace"}}))
                               :event :VimEnter}
                              {1 :nvim-telescope/telescope.nvim
-                              :branch :0.1.x
                               :config (fn []
                                         ((. (require :telescope) :setup) {:extensions {:ui-select [((. (require :telescope.themes)
                                                                                                        :get_dropdown))]}})
@@ -127,7 +126,8 @@
                                                         {:desc "[S]earch [N]eovim files"})
                                         (vim.keymap.set :n :<leader>.
                                                         (fn []
-                                                          (builtin.find_files {:search_dirs [(vim.api.nvim_buf_get_name 0)]}))
+                                                          ; (builtin.find_files {:search_dirs [(vim.api.nvim_buf_get_name 0)]}))
+                                                          (MiniFiles.open (vim.api.nvim_buf_get_name 0) false))
                                                         {:desc "[.] Search Files in buffer CWD"}))
                               :dependencies [:nvim-lua/plenary.nvim
                                              {1 :nvim-telescope/telescope-fzf-native.nvim
@@ -142,6 +142,7 @@
                                                         ((. (require :nvim-web-devicons) :setup) {:default true}))
                                               :enabled true}]
                               :event :VimEnter}
+                             {1 :folke/neodev.nvim :opts {}}
                              {1 :neovim/nvim-lspconfig
                               :config (fn []
                                         (vim.api.nvim_create_autocmd :LspAttach
@@ -309,6 +310,8 @@
                                         ((. (require :mini.misc) :setup))
                                         ((. (require :mini.extra) :setup))
                                         ((. (require :mini.sessions) :setup))
+                                        ((. (require :mini.files) :setup))
+                                        ((. (require :mini.splitjoin) :setup))
                                         (local statusline
                                                (require :mini.statusline))
                                         (statusline.setup {:use_icons vim.g.have_nerd_font})
@@ -331,10 +334,6 @@
                                                         :vimdoc]
                                      :highlight {:enable true}
                                      :indent {:enable true}}}
-                            ; {1 :ibhagwan/fzf-lua
-                            ;   :config (fn []
-                            ;             ((. (require :fzf-lua) :setup) {}))
-                            ;   :dependencies [:nvim-tree/nvim-web-devicons]}
                             :junegunn/fzf
                             :junegunn/fzf.vim
                             {1 :p00f/clangd_extensions.nvim
@@ -402,7 +401,7 @@
                             :hiphish/rainbow-delimiters.nvim
                             {1 :romgrk/barbar.nvim
                              :dependencies [:lewis6991/gitsigns.nvim :nvim-tree/nvim-web-devicons]
-                             :init (fn [] (set vim.g.barbar_auto_setup false))
+                             :init (fn [] (set vim.g.barbar_auto_setup true))
                              :opts {}}
                             :jlanzarotta/bufexplorer
                             :sindrets/winshift.nvim
@@ -414,6 +413,10 @@
                                      (set vim.o.winminwidth 10)
                                      (set vim.o.equalalways false)
                                      ((. (require :windows) :setup)))}
+                            {1 :nvimdev/lspsaga.nvim
+                             :config (fn []
+                                       ((. (require :lspsaga) :setup) {}))
+                             :dependencies [:nvim-treesitter/nvim-treesitter :nvim-tree/nvim-web-devicons]}
                             ])
 
 (local cmp (require :cmp))
