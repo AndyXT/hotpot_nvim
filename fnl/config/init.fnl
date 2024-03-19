@@ -311,7 +311,10 @@
                                         ((. (require :mini.extra) :setup))
                                         ((. (require :mini.sessions) :setup))
                                         ((. (require :mini.files) :setup))
+                                        ((. (require :mini.notify) :setup))
+                                        ((. (require :mini.bracketed) :setup))
                                         ((. (require :mini.splitjoin) :setup))
+                                        ((. (require :mini.jump) :setup))
                                         (local statusline
                                                (require :mini.statusline))
                                         (statusline.setup {:use_icons vim.g.have_nerd_font})
@@ -327,9 +330,11 @@
                                                         :c
                                                         :python
                                                         :html
+                                                        :xml
                                                         :lua
                                                         :fennel
                                                         :markdown
+                                                        :tcl
                                                         :vim
                                                         :vimdoc]
                                      :highlight {:enable true}
@@ -417,6 +422,24 @@
                              :config (fn []
                                        ((. (require :lspsaga) :setup) {}))
                              :dependencies [:nvim-treesitter/nvim-treesitter :nvim-tree/nvim-web-devicons]}
+                            :EdenEast/nightfox.nvim
+                            {1 :danymat/neogen :config true}
+                            :cshuaimin/ssr.nvim
+                            :samharju/synthweave.nvim
+                            {1 :jiaoshijie/undotree
+                             :config true
+                             :dependencies :nvim-lua/plenary.nvim
+                             :keys [[:<leader>u "<cmd>lua require('undotree').toggle()<cr>"]]}
+                            {1 :RaafatTurki/hex.nvim
+                             :config (fn []
+                                       (. (require :hex) :setup)
+                                       (vim.keymap.set :n :<leader>hx
+                                                        (fn [] (. (require :hex) :toggle))
+                                                        {:desc "Toggle [h]e[x] edit mode"}))}
+                            {1 :linrongbin16/fzfx.nvim
+                             :config (fn []
+                                       ((. (require :fzfx) :setup)))
+                             :dependencies [:nvim-tree/nvim-web-devicons :junegunn/fzf]}
                             ])
 
 (local cmp (require :cmp))
@@ -429,3 +452,4 @@
                                                         :option {:ignore_cmds [:Man
                                                                                 "!"]}}])})
 
+(vim.keymap.set [:n :t] :<A-i> "<CMD>Lspsaga term_toggle<CR>" {:desc "Move focus to the upper window"})
