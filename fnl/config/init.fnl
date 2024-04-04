@@ -24,6 +24,9 @@
 (set vim.opt.backup false)
 (set vim.opt.undodir (.. (os.getenv :HOME) :/.vim/undodir))
 (set vim.opt.undofile true)
+(set vim.opt.shell "bash")
+(set vim.opt.shellcmdflag "-c")
+(set vim.opt.shellxquote "")
 
 (vim.keymap.set :n :<Esc> :<cmd>nohlsearch<CR>)
 (vim.keymap.set :n "[d" vim.diagnostic.goto_prev
@@ -52,7 +55,32 @@
                                              :change {:text "~"}
                                              :changedelete {:text "~"}
                                              :delete {:text "_"}
-                                             :topdelete {:text "‾"}}}}
+                                             :topdelete {:text "‾"}}
+                                     :on_attach (fn [bufnr]
+                                                  (local gs package.loaded.gitsigns)
+                                                  (fn map [mode l r opts]
+                                                    (set-forcibly! opts (or opts {}))
+                                                    (set opts.buffer bufnr)
+                                                    (vim.keymap.set mode l r opts))
+
+                                                  (map :n "]h" gs.next_hunk {:desc "Next Hunk"})
+                                                  (map :n "[h" gs.prev_hunk {:desc "Prev Hunk"})
+                                                  (map [:n :v] :<leader>ghs ":Gitsigns stage_hunk<CR>"
+                                                       {:desc "Stage Hunk"})
+                                                  (map [:n :v] :<leader>ghr ":Gitsigns reset_hunk<CR>"
+                                                       {:desc "Reset Hunk"})
+                                                  (map :n :<leader>ghS gs.stage_buffer {:desc "Stage Buffer"})
+                                                  (map :n :<leader>ghu gs.undo_stage_hunk {:desc "Undo Stage Hunk"})
+                                                  (map :n :<leader>ghR gs.reset_buffer {:desc "Reset Buffer"})
+                                                  (map :n :<leader>ghp gs.preview_hunk_inline
+                                                       {:desc "Preview Hunk Inline"})
+                                                  (map :n :<leader>ghb (fn [] (gs.blame_line {:full true}))
+                                                       {:desc "Blame Line"})
+                                                  (map :n :<leader>ghd gs.diffthis {:desc "Diff This"})
+                                                  (map :n :<leader>ghD (fn [] (gs.diffthis "~"))
+                                                       {:desc "Diff This ~"})
+                                                  (map [:o :x] :ih ":<C-U>Gitsigns select_hunk<CR>"
+                                                       {:desc "GitSigns Select Hunk"}))}}
                              {1 :folke/which-key.nvim
                               :config (fn []
                                         ((. (require :which-key) :setup))
@@ -79,56 +107,7 @@
                                                :ui-select)
                                         (local builtin
                                                (require :telescope.builtin))
-                                        (vim.keymap.set :n :<leader>sh
-                                                        builtin.help_tags
-                                                        {:desc "[S]earch [H]elp"})
-                                        (vim.keymap.set :n :<leader>sk
-                                                        builtin.keymaps
-                                                        {:desc "[S]earch [K]eymaps"})
-                                        (vim.keymap.set :n :<leader>sf
-                                                        builtin.find_files
-                                                        {:desc "[S]earch [F]iles"})
-                                        (vim.keymap.set :n :<leader>ss
-                                                        builtin.builtin
-                                                        {:desc "[S]earch [S]elect Telescope"})
-                                        (vim.keymap.set :n :<leader>sw
-                                                        builtin.grep_string
-                                                        {:desc "[S]earch current [W]ord"})
-                                        (vim.keymap.set :n :<leader>sg
-                                                        builtin.live_grep
-                                                        {:desc "[S]earch by [G]rep"})
-                                        (vim.keymap.set :n :<leader>sd
-                                                        builtin.diagnostics
-                                                        {:desc "[S]earch [D]iagnostics"})
-                                        (vim.keymap.set :n :<leader>sr
-                                                        builtin.resume
-                                                        {:desc "[S]earch [R]esume"})
-                                        (vim.keymap.set :n :<leader>s.
-                                                        builtin.oldfiles
-                                                        {:desc "[S]earch Recent Files (\".\" for repeat)"})
-                                        (vim.keymap.set :n :<leader><leader>
-                                                        builtin.buffers
-                                                        {:desc "[ ] Find existing buffers"})
-                                        (vim.keymap.set :n :<leader>/
-                                                        (fn []
-                                                          (builtin.current_buffer_fuzzy_find ((. (require :telescope.themes)
-                                                                                                 :get_dropdown) {:previewer false
-                                                                                                 :winblend 10})))
-                                                        {:desc "[/] Fuzzily search in current buffer"})
-                                        (vim.keymap.set :n :<leader>s/
-                                                        (fn []
-                                                          (builtin.live_grep {:grep_open_files true
-                                                                              :prompt_title "Live Grep in Open Files"}))
-                                                        {:desc "[S]earch [/] in Open Files"})
-                                        (vim.keymap.set :n :<leader>sn
-                                                        (fn []
-                                                          (builtin.find_files {:cwd (vim.fn.stdpath :config)}))
-                                                        {:desc "[S]earch [N]eovim files"})
-                                        (vim.keymap.set :n :<leader>.
-                                                        (fn []
-                                                          ; (builtin.find_files {:search_dirs [(vim.api.nvim_buf_get_name 0)]}))
-                                                          (MiniFiles.open (vim.api.nvim_buf_get_name 0) false))
-                                                        {:desc "[.] Search Files in buffer CWD"}))
+                                        )
                               :dependencies [:nvim-lua/plenary.nvim
                                              {1 :nvim-telescope/telescope-fzf-native.nvim
                                               :build :make
@@ -158,28 +137,22 @@
                                                                                                                desc)}))
 
                                                                                   (map :gd
-                                                                                       (. (require :telescope.builtin)
-                                                                                          :lsp_definitions)
+                                                                                       "<cmd>Pick lsp scope='definition'<CR>"
                                                                                        "[G]oto [D]efinition")
                                                                                   (map :gr
-                                                                                       (. (require :telescope.builtin)
-                                                                                          :lsp_references)
+                                                                                       "<cmd>Pick lsp scope='references'<CR>"
                                                                                        "[G]oto [R]eferences")
                                                                                   (map :gI
-                                                                                       (. (require :telescope.builtin)
-                                                                                          :lsp_implementations)
+                                                                                       "<cmd>Pick lsp scope='implementation'<CR>"
                                                                                        "[G]oto [I]mplementation")
                                                                                   (map :<leader>D
-                                                                                       (. (require :telescope.builtin)
-                                                                                          :lsp_type_definitions)
+                                                                                       "<cmd>Pick lsp scope='type_definition'<CR>"
                                                                                        "Type [D]efinition")
                                                                                   (map :<leader>ds
-                                                                                       (. (require :telescope.builtin)
-                                                                                          :lsp_document_symbols)
+                                                                                       "<cmd>Pick lsp scope='document_symbol'<CR>"
                                                                                        "[D]ocument [S]ymbols")
                                                                                   (map :<leader>ws
-                                                                                       (. (require :telescope.builtin)
-                                                                                          :lsp_dynamic_workspace_symbols)
+                                                                                       "<cmd>Pick lsp scope='workspace_symbol'<CR>"
                                                                                        "[W]orkspace [S]ymbols")
                                                                                   (map :<leader>rn
                                                                                        vim.lsp.buf.rename
@@ -214,41 +187,21 @@
                                                                   capabilities
                                                                   ((. (require :cmp_nvim_lsp)
                                                                       :default_capabilities))))
-                                        (local servers
-                                               {:lua_ls {:settings {:Lua {:completion {:callSnippet :Replace}
-                                                                          :runtime {:version :LuaJIT}
-                                                                          :workspace {:checkThirdParty false
-                                                                                      :library ["${3rd}/luv/library"
-                                                                                                (unpack (vim.api.nvim_get_runtime_file ""
-                                                                                                                                       true))]}}}}
-                                                :clangd {}})
-                                        ((. (require :mason) :setup))
-                                        (local ensure-installed
-                                               (vim.tbl_keys (or servers {})))
-                                        (vim.list_extend ensure-installed
-                                                         [:stylua])
-                                        ((. (require :mason-tool-installer)
-                                            :setup) {:ensure_installed ensure-installed})
-                                        ((. (require :mason-lspconfig) :setup) {:handlers [(fn [server-name]
-                                                                                             (local server
-                                                                                                    (or (. servers
-                                                                                                           server-name)
-                                                                                                        {}))
-                                                                                             (set server.capabilities
-                                                                                                  (vim.tbl_deep_extend :force
-                                                                                                                       {}
-                                                                                                                       capabilities
-                                                                                                                       (or server.capabilities
-                                                                                                                           {})))
-                                                                                             ((. (. (require :lspconfig)
-                                                                                                    server-name)
-                                                                                                 :setup) server))]}))
+                                        (local lspconfig (require :lspconfig))
+                                        ((. lspconfig :clangd :setup) {:capabilities capabilities})
+                                        ((. lspconfig :lua_ls :setup) {:capabilities capabilities
+                                                                      :settings {:Lua {:completion {:callSnippet :Replace}
+                                                                      :runtime {:version :LuaJIT}
+                                                                      :workspace {:checkThirdParty false
+                                                                      :library ["${3rd}/luv/library"
+                                                                                (unpack (vim.api.nvim_get_runtime_file ""
+                                                                                                                       true))]}}}}))
                               :dependencies [:williamboman/mason.nvim
                                              :williamboman/mason-lspconfig.nvim
                                              :WhoIsSethDaniel/mason-tool-installer.nvim
                                              {1 :j-hui/fidget.nvim :opts {}}]}
                              {1 :stevearc/conform.nvim
-                              :opts {:format_on_save {:lsp_fallback true
+                              :opts {:format_on_save {:lsp_fallback false
                                                       :timeout_ms 500}
                                      :formatters_by_ft {:lua [:stylua]}
                                      :notify_on_error false}}
@@ -269,9 +222,9 @@
                                                                                                                  (luasnip.expand_or_jump)))
                                                                                                              [:i
                                                                                                               :s])
-                                                                                         :<C-n> (cmp.mapping.select_next_item)
-                                                                                         :<C-p> (cmp.mapping.select_prev_item)
-                                                                                         :<C-y> (cmp.mapping.confirm {:select true})})
+                                                                                         :<tab> (cmp.mapping.select_next_item)
+                                                                                         :<S-tab> (cmp.mapping.select_prev_item)
+                                                                                         :<CR> (cmp.mapping.confirm {:select true})})
                                                     :snippet {:expand (fn [args]
                                                                         (luasnip.lsp_expand args.body))}
                                                     :sources [{:name :nvim_lsp}
@@ -294,17 +247,55 @@
                               :event :InsertEnter}
                              {1 :folke/tokyonight.nvim
                               :init (fn []
-                                      (vim.cmd.colorscheme :tokyonight-night)
+                                      ; (vim.cmd.colorscheme :tokyonight-night)
                                       (vim.cmd.hi "Comment gui=none"))
                               :priority 1000}
                              {1 :folke/todo-comments.nvim
                               :dependencies [:nvim-lua/plenary.nvim]
                               :event :VimEnter
                               :opts {:signs false}}
+                             {1 :folke/trouble.nvim :dependencies [:nvim-tree/nvim-web-devicons] :opts {}}
                              {1 :echasnovski/mini.nvim
                               :config (fn []
-                                        ((. (require :mini.ai) :setup) {:n_lines 500})
+                                        (local opts (fn []
+                                                      (let [ai (require :mini.ai)]
+                                                        {:custom_textobjects {
+                                                         :U (ai.gen_spec.function_call {:name_pattern "[%w_]"})
+                                                         :c (ai.gen_spec.treesitter {:a "@class.outer"
+                                                                                    :i "@class.inner"}
+                                                                                    {})
+                                                         :d ["%f[%d]%d+"]
+                                                         :e [["%u[%l%d]+%f[^%l%d]"
+                                                              "%f[%S][%l%d]+%f[^%l%d]"
+                                                              "%f[%P][%l%d]+%f[^%l%d]"
+                                                              "^[%l%d]+%f[^%l%d]"]
+                                                             "^().*()$"]
+                                                         :f (ai.gen_spec.treesitter {:a "@function.outer"
+                                                                                    :i "@function.inner"}
+                                                                                    {})
+                                                         :g (fn []
+                                                              (local from {:col 1 :line 1})
+                                                              (local to
+                                                                     {:col (math.max (: (vim.fn.getline "$")
+                                                                                        :len)
+                                                                                     1)
+                                                                     :line (vim.fn.line "$")})
+                                                              {: from : to})
+                                                         :o (ai.gen_spec.treesitter {:a ["@block.outer"
+                                                                                         "@conditional.outer"
+                                                                                         "@loop.outer"]
+                                                                                    :i ["@block.inner"
+                                                                                        "@conditional.inner"
+                                                                                        "@loop.inner"]}
+                                                                                    {})
+                                                         :t ["<([%p%w]-)%f[^<%w][^<>]->.-</%1>"
+                                                             "^<.->().*()</[^/]->$"]
+                                                         :u (ai.gen_spec.function_call)}
+                                                         :n_lines 500})))
+                                        ((. (require :mini.ai) :setup) (opts))
+                                        ((. (require :mini.diff) :setup))
                                         ((. (require :mini.surround) :setup))
+                                        ((. (require :mini.basics) :setup))
                                         ((. (require :mini.starter) :setup))
                                         ((. (require :mini.indentscope) :setup))
                                         ((. (require :mini.misc) :setup))
@@ -314,6 +305,53 @@
                                         ((. (require :mini.notify) :setup))
                                         ((. (require :mini.bracketed) :setup))
                                         ((. (require :mini.splitjoin) :setup))
+                                        ((. (require :mini.pick) :setup))
+                                        (vim.keymap.set :n :<leader>sh
+                                                        "<CMD>Pick help<CR>"
+                                                        {:desc "[S]earch [H]elp"})
+                                        (vim.keymap.set :n :<leader>sk
+                                                        "<CMD>Pick keymaps<CR>"
+                                                        {:desc "[S]earch [K]eymaps"})
+                                        (vim.keymap.set :n :<leader>sf
+                                                        "<CMD>Pick files<CR>"
+                                                        {:desc "[S]earch [F]iles"})
+                                        ; (vim.keymap.set :n :<leader>ss
+                                        ;                 builtin.builtin
+                                        ;                 {:desc "[S]earch [S]elect Telescope"})
+                                        (vim.keymap.set :n :<leader>sw
+                                                        "<CMD>Pick grep pattern='<cword>'<CR>"
+                                                        {:desc "[S]earch current [W]ord"})
+                                        (vim.keymap.set :n :<leader>sg
+                                                        "<CMD>Pick grep_live<CR>"
+                                                        {:desc "[S]earch by [G]rep"})
+                                        (vim.keymap.set :n :<leader>sd
+                                                        "<CMD>Pick diagnostic<CR>"
+                                                        {:desc "[S]earch [D]iagnostics"})
+                                        (vim.keymap.set :n :<leader>sr
+                                                        "<CMD>Pick resume<CR>"
+                                                        {:desc "[S]earch [R]esume"})
+                                        (vim.keymap.set :n :<leader>s.
+                                                        "<CMD>Pick oldfiles<CR>"
+                                                        {:desc "[S]earch Recent Files (\".\" for repeat)"})
+                                        (vim.keymap.set :n :<leader><leader>
+                                                        "<CMD>Pick buffers<CR>"
+                                                        {:desc "[ ] Find existing buffers"})
+                                        (vim.keymap.set :n :<leader>/
+                                                        "<CMD>Pick buf_lines<CR>"
+                                                        {:desc "[/] Fuzzily search in current buffer"})
+                                        ; (vim.keymap.set :n :<leader>s/
+                                        ;                 (fn []
+                                        ;                   (builtin.live_grep {:grep_open_files true
+                                        ;                                       :prompt_title "Live Grep in Open Files"}))
+                                        ;                 {:desc "[S]earch [/] in Open Files"})
+                                        ; (vim.keymap.set :n :<leader>sn
+                                        ;                 (fn []
+                                        ;                   (builtin.find_files {:cwd (vim.fn.stdpath :config)}))
+                                        ;                 {:desc "[S]earch [N]eovim files"})
+                                        (vim.keymap.set :n :<leader>.
+                                                        (fn []
+                                                          (MiniFiles.open (vim.api.nvim_buf_get_name 0) false))
+                                                        {:desc "[.] Search Files in buffer CWD"})
                                         ((. (require :mini.jump) :setup))
                                         (local statusline
                                                (require :mini.statusline))
@@ -339,109 +377,184 @@
                                                         :vimdoc]
                                      :highlight {:enable true}
                                      :indent {:enable true}}}
-                            :junegunn/fzf
-                            :junegunn/fzf.vim
-                            {1 :p00f/clangd_extensions.nvim
-                             :config (fn [])
-                             :lazy true
-                             :opts {:extensions {:ast {:kind_icons {:Compound ""
-                                                                    :PackExpansion ""
-                                                                    :Recovery ""
-                                                                    :TemplateParamObject ""
-                                                                    :TemplateTemplateParm ""
-                                                                    :TemplateTypeParm ""
-                                                                    :TranslationUnit ""}
-                                                       :role_icons {:declaration ""
-                                                                    :expression ""
-                                                                    :specifier ""
-                                                                    :statement ""
-                                                                    "template argument" ""
-                                                                    :type ""}}
-                                                 :inlay_hints {:inline false}}}}
-                            :vim-pandoc/vim-pandoc
-                            :vim-pandoc/vim-pandoc-syntax
-                            :gabrielpoca/replacer.nvim
-                            {1 :dhananjaylatkar/cscope_maps.nvim
-                             :dependencies [:nvim-tree/nvim-web-devicons]
-                             :opts {:prefix :<C-c>}}
-                            {1 :coffebar/transfer.nvim
-                             :cmd [:TransferInit
-                                   :DiffRemote
-                                   :TransferUpload
-                                   :TransferDownload
-                                   :TransferDirDiff
-                                   :TransferRepeat]
-                             :lazy true
-                             :opts {}}
-                            {1 :linrongbin16/gentags.nvim
-                             :config (fn []
-                                       ((. (require :gentags) :setup)))}
-                            {1 :carbon-steel/detour.nvim
-                             :config (fn [] (vim.keymap.set :n :<c-w><cr> ":Detour<cr>"))}
-                            {1 :akinsho/git-conflict.nvim :config true :version "*"}
-                            :nvim-pack/nvim-spectre
-                            {1 :chentoast/marks.nvim
-                             :config (fn []
-                                       (let [marks (require :marks)] (marks.setup)))}
-                            :sindrets/diffview.nvim
-                            :radenling/vim-dispatch-neovim
-                            :tpope/vim-abolish
-                            :tpope/vim-dispatch
-                            :tpope/vim-eunuch
-                            :tpope/vim-fugitive
-                            :tpope/vim-repeat
-                            :onsails/lspkind.nvim
-                            {1 :yorickpeterse/nvim-pqf
-                             :config (fn []
-                                       (let [pqf (require :pqf)] (pqf.setup)))}
-                            :kevinhwang91/nvim-bqf
-                            {1 :max397574/better-escape.nvim
-                             :config (fn []
-                                       (let [better-escape (require :better_escape)] (better-escape.setup)))}
-                            {1 :cbochs/portal.nvim
-                             :dependencies [:cbochs/grapple.nvim :ThePrimeagen/harpoon]}
-                            {1 :stevearc/aerial.nvim
-                             :dependencies [:nvim-treesitter/nvim-treesitter :nvim-tree/nvim-web-devicons]
-                             :opts {}}
-                            :hiphish/rainbow-delimiters.nvim
-                            {1 :romgrk/barbar.nvim
-                             :dependencies [:lewis6991/gitsigns.nvim :nvim-tree/nvim-web-devicons]
-                             :init (fn [] (set vim.g.barbar_auto_setup true))
-                             :opts {}}
-                            :jlanzarotta/bufexplorer
-                            :sindrets/winshift.nvim
-                            :mrjones2014/smart-splits.nvim
-                            {1 :anuvyklack/windows.nvim
-                             :dependencies [:anuvyklack/middleclass :anuvyklack/animation.nvim]
-                             :init (fn []
-                                     (set vim.o.winwidth 10)
-                                     (set vim.o.winminwidth 10)
-                                     (set vim.o.equalalways false)
-                                     ((. (require :windows) :setup)))}
-                            {1 :nvimdev/lspsaga.nvim
-                             :config (fn []
-                                       ((. (require :lspsaga) :setup) {}))
-                             :dependencies [:nvim-treesitter/nvim-treesitter :nvim-tree/nvim-web-devicons]}
-                            :EdenEast/nightfox.nvim
-                            {1 :danymat/neogen :config true}
-                            :cshuaimin/ssr.nvim
-                            :samharju/synthweave.nvim
-                            {1 :jiaoshijie/undotree
-                             :config true
-                             :dependencies :nvim-lua/plenary.nvim
-                             :keys [[:<leader>u "<cmd>lua require('undotree').toggle()<cr>"]]}
-                            {1 :RaafatTurki/hex.nvim
-                             :config (fn []
-                                       (. (require :hex) :setup)
-                                       (vim.keymap.set :n :<leader>hx
-                                                        (fn [] (. (require :hex) :toggle))
-                                                        {:desc "Toggle [h]e[x] edit mode"}))}
-                            {1 :linrongbin16/fzfx.nvim
-                             :config (fn []
-                                       ((. (require :fzfx) :setup)))
-                             :dependencies [:nvim-tree/nvim-web-devicons :junegunn/fzf]}
+                             :junegunn/fzf
+                             :junegunn/fzf.vim
+                             {1 :p00f/clangd_extensions.nvim
+                              :config (fn [])
+                              :lazy true
+                              :opts {:extensions {:ast {:kind_icons {:Compound ""
+                                                                     :PackExpansion ""
+                                                                     :Recovery ""
+                                                                     :TemplateParamObject ""
+                                                                     :TemplateTemplateParm ""
+                                                                     :TemplateTypeParm ""
+                                                                     :TranslationUnit ""}
+                                                        :role_icons {:declaration ""
+                                                                     :expression ""
+                                                                     :specifier ""
+                                                                     :statement ""
+                                                                     "template argument" ""
+                                                                     :type ""}}
+                                                  :inlay_hints {:inline false}}}}
+                             :vim-pandoc/vim-pandoc
+                             :vim-pandoc/vim-pandoc-syntax
+                             :gabrielpoca/replacer.nvim
+                             {1 :dhananjaylatkar/cscope_maps.nvim
+                              :dependencies [:nvim-tree/nvim-web-devicons]
+                              :opts {:prefix :<C-c>}}
+                             {1 :coffebar/transfer.nvim
+                              :cmd [:TransferInit
+                                    :DiffRemote
+                                    :TransferUpload
+                                    :TransferDownload
+                                    :TransferDirDiff
+                                    :TransferRepeat]
+                              :lazy true
+                              :opts {}}
+                             {1 :linrongbin16/gentags.nvim
+                              :config (fn []
+                                        ((. (require :gentags) :setup)))}
+                             {1 :carbon-steel/detour.nvim
+                              :config (fn [] (vim.keymap.set :n :<c-w><cr> ":Detour<cr>"))}
+                             {1 :akinsho/git-conflict.nvim :config true :version "*"}
+                             :nvim-pack/nvim-spectre
+                             {1 :chentoast/marks.nvim
+                              :config (fn []
+                                        (let [marks (require :marks)] (marks.setup)))}
+                             :sindrets/diffview.nvim
+                             :radenling/vim-dispatch-neovim
+                             :tpope/vim-abolish
+                             :tpope/vim-dispatch
+                             :tpope/vim-eunuch
+                             :tpope/vim-fugitive
+                             :tpope/vim-repeat
+                             :onsails/lspkind.nvim
+                             {1 :yorickpeterse/nvim-pqf
+                              :config (fn []
+                                        (let [pqf (require :pqf)] (pqf.setup)))}
+                             :kevinhwang91/nvim-bqf
+                             {1 :max397574/better-escape.nvim
+                              :config (fn []
+                                        (let [better-escape (require :better_escape)] (better-escape.setup)))}
+                             {1 :cbochs/portal.nvim
+                              :dependencies [:cbochs/grapple.nvim :ThePrimeagen/harpoon]}
+                             {1 :stevearc/aerial.nvim
+                              :dependencies [:nvim-treesitter/nvim-treesitter :nvim-tree/nvim-web-devicons]
+                              :opts {}}
+                             :hiphish/rainbow-delimiters.nvim
+                             {1 :romgrk/barbar.nvim
+                              :dependencies [:lewis6991/gitsigns.nvim :nvim-tree/nvim-web-devicons]
+                              :init (fn [] (set vim.g.barbar_auto_setup true))
+                              :opts {}}
+                             :jlanzarotta/bufexplorer
+                             :sindrets/winshift.nvim
+                             :mrjones2014/smart-splits.nvim
+                             {1 :anuvyklack/windows.nvim
+                              :dependencies [:anuvyklack/middleclass :anuvyklack/animation.nvim]
+                              :init (fn []
+                                      (set vim.o.winwidth 10)
+                                      (set vim.o.winminwidth 10)
+                                      (set vim.o.equalalways false)
+                                      ((. (require :windows) :setup)))}
+                             {1 :nvimdev/lspsaga.nvim
+                              :config (fn []
+                                        ((. (require :lspsaga) :setup) {}))
+                              :dependencies [:nvim-treesitter/nvim-treesitter :nvim-tree/nvim-web-devicons]}
+                             :EdenEast/nightfox.nvim
+                             {1 :danymat/neogen :config true}
+                             :cshuaimin/ssr.nvim
+                             :samharju/synthweave.nvim
+                             {1 :jiaoshijie/undotree
+                              :config true
+                              :dependencies :nvim-lua/plenary.nvim
+                              :keys [[:<leader>u "<cmd>lua require('undotree').toggle()<cr>"]]}
+                             {1 :RaafatTurki/hex.nvim
+                              :config (fn []
+                                        (. (require :hex) :setup)
+                                        (vim.keymap.set :n :<leader>hx
+                                                         (fn [] (. (require :hex) :toggle))
+                                                         {:desc "Toggle [h]e[x] edit mode"}))}
+                             {1 :linrongbin16/fzfx.nvim
+                              :config (fn []
+                                        ((. (require :fzfx) :setup)))
+                              :dependencies [:nvim-tree/nvim-web-devicons :junegunn/fzf]}
+                             {1 :eldritch-theme/eldritch-nvim
+                              :config (fn [opts]
+                                        (local eldritch (require :eldritch))
+                                        (eldritch.setup opts))
+                              :opts {}
+                              :priority 1000}
+                             {1 :nvim-neorg/neorg
+                              :config true
+                              :dependencies [:luarocks.nvim]
+                              :lazy false
+                              :version "*"}
+                             {1 :kevinm6/kurayami.nvim
+                              :config (fn [] (vim.cmd.colorscheme :kurayami))
+                              :event :VimEnter
+                              :priority 1000}
+                             :habamax/vim-asciidoctor
+                             {1 :nvimtools/hydra.nvim :config (fn []
+                                                                (local Hydra (require :hydra))
+                                                                (local gitsigns (require :gitsigns))
+                                                                (local hint " _J_: next hunk   _s_: stage hunk        _d_: show deleted   _b_: blame line
+ _K_: prev hunk   _u_: undo last stage   _p_: preview hunk   _B_: blame show full 
+ ^ ^              _S_: stage buffer      ^ ^                 _/_: show base file
+ ^
+ ^ ^              _<Enter>_: Neogit              _q_: exit
+")
+                                                                (Hydra {:body :<leader>G
+                                                                        :config {:buffer bufnr
+                                                                                 :color :pink
+                                                                                 :hint {}
+                                                                                 :invoke_on_body true
+                                                                                 :on_enter (fn [] (vim.cmd :mkview)
+                                                                                             (vim.cmd "silent! %foldopen!")
+                                                                                             (set vim.bo.modifiable false)
+                                                                                             (gitsigns.toggle_signs true)
+                                                                                             (gitsigns.toggle_linehl true))
+                                                                                 :on_exit (fn []
+                                                                                            (local cursor-pos (vim.api.nvim_win_get_cursor 0))
+                                                                                            (vim.cmd :loadview)
+                                                                                            (vim.api.nvim_win_set_cursor 0 cursor-pos)
+                                                                                            (vim.cmd "normal zv")
+                                                                                            (gitsigns.toggle_signs false)
+                                                                                            (gitsigns.toggle_linehl false)
+                                                                                            (gitsigns.toggle_deleted false))}
+                                                                        :heads [[:J
+                                                                                 (fn []
+                                                                                   (when vim.wo.diff (lua "return \"]c\""))
+                                                                                   (vim.schedule (fn [] (gitsigns.next_hunk)))
+                                                                                   :<Ignore>)
+                                                                                 {:desc "next hunk" :expr true}]
+                                                                                [:K
+                                                                                 (fn []
+                                                                                   (when vim.wo.diff (lua "return \"[c\""))
+                                                                                   (vim.schedule (fn [] (gitsigns.prev_hunk)))
+                                                                                   :<Ignore>)
+                                                                                 {:desc "prev hunk" :expr true}]
+                                                                                [:s
+                                                                                 ":Gitsigns stage_hunk<CR>"
+                                                                                 {:desc "stage hunk" :silent true}]
+                                                                                [:u gitsigns.undo_stage_hunk {:desc "undo last stage"}]
+                                                                                [:S gitsigns.stage_buffer {:desc "stage buffer"}]
+                                                                                [:p gitsigns.preview_hunk {:desc "preview hunk"}]
+                                                                                [:d
+                                                                                 gitsigns.toggle_deleted
+                                                                                 {:desc "toggle deleted" :nowait true}]
+                                                                                [:b gitsigns.blame_line {:desc :blame}]
+                                                                                [:B
+                                                                                 (fn [] (gitsigns.blame_line {:full true}))
+                                                                                 {:desc "blame show full"}]
+                                                                                ["/" gitsigns.show {:desc "show base file" :exit true}]
+                                                                                [:<Enter> :<Cmd>Git<CR> {:desc :Neogit :exit true}]
+                                                                                [:q nil {:desc :exit :exit true :nowait true}]]
+                                                                        :hint hint
+                                                                        :mode [:n :x]
+                                                                        :name :Git}))}
+                             {1 :grapp-dev/nui-components.nvim :dependencies [:MunifTanjim/nui.nvim]}
+                             {1 :vhyrro/luarocks.nvim :config true :priority 1000}
                             ])
-
 (local cmp (require :cmp))
 (cmp.setup.cmdline ["/" "?"] {:mapping (cmp.mapping.preset.cmdline)
                    :sources [{:name :buffer}]})
