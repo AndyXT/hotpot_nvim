@@ -1,5 +1,6 @@
 -- ~/.config/nvim/init.lua
-
+vim.o.shell = "bash"
+vim.o.shellcmdflag = "-c"
 -- As per lazy's install instructions
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 if not vim.loop.fs_stat(lazypath) then
@@ -23,7 +24,6 @@ if not vim.loop.fs_stat(hotpotpath) then
     "--filter=blob:none",
     "--single-branch",
     -- You may with to pin a known version tag with `--branch=vX.Y.Z`
-    "--branch=v0.9.6",
     "https://github.com/rktjmp/hotpot.nvim.git",
     hotpotpath,
   })
@@ -35,16 +35,12 @@ vim.opt.runtimepath:prepend({hotpotpath, lazypath})
 require("hotpot") -- optionally you may call require("hotpot").setup(...) here
 
 vim.cmd([[let g:fzf_vim = {}
-let g:fzf_vim.preview_bash = 'C:\msys64\usr\bin\bash.exe'
+let g:fzf_vim.preview_bash = 'bash.exe'
 let g:fzf_vim.preview_window = ['right,50%', 'ctrl-/']
 command! -bang -nargs=? -complete=dir Files
     \ call fzf#vim#files(<q-args>, fzf#vim#with_preview(), <bang>0)
 inoremap <expr> <c-x><c-f> fzf#vim#complete#path('rg --files')
 ]])
 
--- include hotpot as a plugin so lazy will update it
--- local plugins = {"rktjmp/hotpot.nvim"}
--- require("lazy").setup(plugins)
-
 -- include the rest of your config
-require("config.init")
+require("kickstart.init")
